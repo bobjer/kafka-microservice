@@ -139,9 +139,43 @@ The project is structured into several packages to promote modularity, ease of m
 
 ## Running Integration Tests
 
-Integration tests are set up to produce test messages to the `input_topic` and verify the service logs. The results of the integration tests can be viewed in the logs of the service.
+Integration tests running automaticaly when the service is startedand are set up to produce test messages to the `input_topic` and verify the service logs. The results of the integration tests can be viewed in the logs of the service.
 
 To view the results of the integration tests, run the following command:
+    ```sh
+    docker-compose logs -f kafka-microservice
+    ```
 
-```sh
-docker-compose logs -f integration-test
+## Architect diargam
+
++---------------------------+
+|                           |
+|      Kafka Broker         |
+|                           |
+|   +-------------------+   |
+|   | input_topic       |   |
+|   +---------+---------+   |
+|             |             |
+|             v             |
+|   +---------+---------+   |
+|   | Kafka Consumer   |    |
+|   | (kafka-microservice)  |
+|   +---------+---------+   |
+|             |             |
+|             v             |
+|   +---------+---------+   |
+|   | Message Processor |   |
+|   +---------+---------+   |
+|             |             |
+|             v             |
+|   +---------+---------+   |
+|   | Kafka Producer   |    |
+|   | (kafka-microservice)  |
+|   +---------+---------+   |
+|             |             |
+|             v             |
+|   +---------+---------+   |
+|   | output_topic      |   |
+|   +-------------------+   |
+|                           |
++---------------------------+
