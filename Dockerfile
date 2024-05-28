@@ -12,7 +12,5 @@ RUN go test ./... -v
 FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /kafka-microservice /kafka-microservice
-COPY config.yaml /app/config.yaml
-
 
 CMD ["/kafka-microservice"]
