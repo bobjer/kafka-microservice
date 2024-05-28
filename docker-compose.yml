@@ -41,8 +41,6 @@ services:
       NUM_PRODUCER_WORKERS: 3
     depends_on:
       - kafka
-    volumes:
-      - ./config.yaml:/app/config.yaml
     entrypoint: ["sh", "-c", "sleep 15 && /kafka-microservice"]
 
   integration-test:
