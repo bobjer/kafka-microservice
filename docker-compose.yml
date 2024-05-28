@@ -8,15 +8,13 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    command: ["sh", "-c", "/usr/bin/zookeeper-server-start /opt/zookeeper/conf/zoo.cfg > /dev/null 2>&1"]
-    logging:
-      driver: "none"
 
   kafka:
     image: wurstmeister/kafka:latest
     ports:
       - "9092:9092"
     environment:
+      KAFKA_CREATE_TOPICS: "INPUT_TOPIC:1:1;OUTPUT_TOPIC:1:1"
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
@@ -24,9 +22,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
       - zookeeper
-    command: ["sh", "-c", "exec kafka-server-start.sh /opt/kafka/config/server.properties > /dev/null 2>&1"]
-    logging:
-      driver: "none"
 
   kafka-microservice:
     build: .
