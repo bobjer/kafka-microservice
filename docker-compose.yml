@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    command: ["sh", "-c", "/usr/bin/zookeeper-server-start /opt/zookeeper/conf/zoo.cfg > /dev/null 2>&1"]
+    logging:
+      driver: "none"
+
+  kafka:
+    image: wurstmeister/kafka:latest
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    command: ["sh", "-c", "exec kafka-server-start.sh /opt/kafka/config/server.properties > /dev/null 2>&1"]
+    logging:
+      driver: "none"
+
+  kafka-microservice:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BROKER: kafka:9092
+      GROUP_ID: my-group
+      INPUT_TOPIC: input_topic
+      OUTPUT_TOPIC: output_topic
+      NUM_CONSUMER_WORKERS: 3
+      NUM_PRODUCER_WORKERS: 3
+    depends_on:
+      - kafka
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    entrypoint: ["sh", "-c", "sleep 15 && /kafka-microservice"]
+
+  integration-test:
+    image: wurstmeister/kafka:latest
+    depends_on:
+      - kafka
+    entrypoint: |
+      sh -c "
+        sleep 15;
+        kafka-topics.sh --create --topic input_topic --bootstrap-server kafka:9092 --partitions 1 --replication-factor 1;
+        echo 'Producing test messages';
+        echo '{\"id\": \"test_1\", \"timestamp\": \"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\", \"data\": \"Sample data that is more than 10 characters\"}' | kafka-console-producer.sh --broker-list kafka:9092 --topic input_topic;
+        echo '{\"id\": \"test_2\", \"timestamp\": \"'$(date -u -d yesterday +%Y-%m-%dT%H:%M:%SZ)'\", \"data\": \"Old data\"}' | kafka-console-producer.sh --broker-list kafka:9092 --topic input_topic;
+        echo '{\"id\": \"test_3\", \"timestamp\": \"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\", \"data\": \"Short\"}' | kafka-console-producer.sh --broker-list kafka:9092 --topic input_topic;
+        echo 'Test messages produced';
+      "
